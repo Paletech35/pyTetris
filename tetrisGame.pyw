@@ -22,7 +22,10 @@ tetrominoes = {
         [1, 1]
         ],
     "I":[
-        [2, 2, 2, 2]
+        [2],
+        [2],
+        [2],
+        [2]
         ],
     "J":[
         [0, 3],
@@ -45,12 +48,11 @@ tetrominoes = {
         [6, 0]
         ],
     "T":[
-        [7, 0],
-        [7, 7],
-        [7, 0]
+        [0, 7, 0],
+        [0, 7, 7],
+        [0, 7, 0]
         ]
     }
-
 def joinMatrices(mat1, mat2, offset):
     for m1y, m1row in enumerate(mat1):
         for m1x, m1column in enumerate(m1row):
@@ -100,6 +102,8 @@ def TetrisGame():
     tetromino = tetrominoes[tetromino]
     last = pygame.time.get_ticks()
     offset = [0, 0]
+    hold = [[]]
+    held = False
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -126,6 +130,21 @@ def TetrisGame():
                         offset[0] = len(board[0]) - len(tetromino[0])
                     if checkCollision(board, tetromino, offset):
                         offset[0] -= 1
+                if event.key == pygame.K_SPACE:
+                    if not held:
+                        if hold == [[]]:
+                            hold = tetromino
+                            tetromino = random.choice(["S", "Z", "O", "I", "J", "L", "T"])
+                            tetromino = tetrominoes[tetromino]
+                            offset = [0, 0]
+                        else:
+                            tempTet = tetromino
+                            tetromino = hold
+                            hold = tempTet
+                            offset = [0, 0]
+                        held = True
+                        while hold not in tetrominoes.values():
+                            hold = rotMat(hold)
         now = pygame.time.get_ticks()
         if now - last > config["delay"]:
             last = now
@@ -136,6 +155,7 @@ def TetrisGame():
                 tetromino = random.choice(["S", "Z", "O", "I", "J", "L", "T"])
                 tetromino = tetrominoes[tetromino]
                 offset = [0, 0]
+                held = False
         for y, row in enumerate(board):
             for x, column in enumerate(row):
                 pygame.draw.rect(DISPLAYSURF, colours[column], (x * config["cellsize"], y * config["cellsize"], config["cellsize"], config["cellsize"]))
@@ -166,13 +186,19 @@ def TetrisGame():
                 score += 1000
         if cleared != 0:
             lastClear = cleared
-        pygame.draw.rect(DISPLAYSURF, (255, 0, 0), (0, 0, config["cellsize"] * config["columns"], config["cellsize"] * 2))
+        pygame.draw.rect(DISPLAYSURF, (0, 0, 0), (0, 0, config["cellsize"] * config["columns"], config["cellsize"] * 2))
         pygame.draw.line(DISPLAYSURF, (255, 255, 255), (0, 2 * config["cellsize"]), (config["cellsize"] * config["columns"], config["cellsize"] * 2))
-        
         clock.tick(config["maxfps"])
         sText = font.render("Score: " + str(score), False, (255, 255, 255))
         sRect = sText.get_rect()
         DISPLAYSURF.blit(sText, (10, 10, 30, 30))
+        if hold != [[]]:
+            for y, row in enumerate(hold):
+                for x, column in enumerate(row):
+                    if column != 0:
+                        size = config["cellsize"] // 2.25
+                        lOffset = (1.5 * config["columns"], 0.5)
+                        pygame.draw.rect(DISPLAYSURF, colours[column], ((x + lOffset[0]) * size, (y + lOffset[1]) * size, size, size))
         pygame.display.update()
         dead = False
         for each in board[0]:
